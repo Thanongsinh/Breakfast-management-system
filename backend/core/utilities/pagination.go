@@ -1,8 +1,9 @@
 package utilities
 
 import (
+	"rental-v3/backend/domain/models"
+
 	"gorm.io/gorm"
-	"rental-backend/domain/models"
 )
 
 // ParsePaginationParams parses pagination parameters from request

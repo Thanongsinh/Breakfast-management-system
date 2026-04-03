@@ -1,50 +1,84 @@
 package repositories
 
 import (
-	"context"
 	"rental-v3/backend/domain/entities"
+
+	"gorm.io/gorm"
 )
 
 // UserRepository defines methods for user data access
-type UserRepository interface {
-	Create(ctx context.Context, user *entities.User) error
-	FindByEmail(ctx context.Context, email string) (*entities.User, error)
-	FindByID(ctx context.Context, id string) (*entities.User, error)
-	Update(ctx context.Context, user *entities.User) error
-	List(ctx context.Context, limit, offset int) ([]*entities.User, error)
-}
-
-// userRepositoryImpl is the concrete implementation of UserRepository
-type userRepositoryImpl struct {
-	// TODO: add database connection
+type UserRepository struct {
+	DB *gorm.DB
 }
 
 // NewUserRepository creates a new instance of UserRepository
-func NewUserRepository() UserRepository {
-	return &userRepositoryImpl{}
+func NewUserRepository(db *gorm.DB) *UserRepository {
+	return &UserRepository{DB: db}
 }
 
-func (r *userRepositoryImpl) Create(ctx context.Context, user *entities.User) error {
-	// TODO: implement
-	return nil
+// Create creates a new user
+func (r *UserRepository) Create(user *entities.User) error {
+	return r.DB.Create(user).Error
 }
 
-func (r *userRepositoryImpl) FindByEmail(ctx context.Context, email string) (*entities.User, error) {
-	// TODO: implement
-	return nil, nil
+// FindByEmail finds a user by email
+func (r *UserRepository) FindByEmail(email string) (*entities.User, error) {
+	var user entities.User
+	err := r.DB.Where("email = ?", email).First(&user).Error
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
-func (r *userRepositoryImpl) FindByID(ctx context.Context, id string) (*entities.User, error) {
-	// TODO: implement
-	return nil, nil
+// FindByID finds a user by ID
+func (r *UserRepository) FindByID(id uint) (*entities.User, error) {
+	var user entities.User
+	err := r.DB.First(&user, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
-func (r *userRepositoryImpl) Update(ctx context.Context, user *entities.User) error {
-	// TODO: implement
-	return nil
+// Update updates a user
+func (r *UserRepository) Update(user *entities.User) error {
+	return r.DB.Save(user).Error
 }
 
-func (r *userRepositoryImpl) List(ctx context.Context, limit, offset int) ([]*entities.User, error) {
-	// TODO: implement
-	return nil, nil
+// List returns a paginated list of users
+func (r *UserRepository) List(limit, offset int) ([]*entities.User, int64, error) {
+	var users []*entities.User
+	var total int64
+
+	// Count total
+	if err := r.DB.Model(&entities.User{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Get paginated results
+	err := r.DB.Offset(offset).Limit(limit).Find(&users).Error
+	return users, total, err
+}
+
+// ListByRole returns users filtered by role
+func (r *UserRepository) ListByRole(role string, limit, offset int) ([]*entities.User, int64, error) {
+	var users []*entities.User
+	var total int64
+
+	query := r.DB.Where("role = ?", role)
+
+	// Count total
+	if err := query.Model(&entities.User{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Get paginated results
+	err := query.Offset(offset).Limit(limit).Find(&users).Error
+	return users, total, err
+}
+
+// Delete soft deletes a user (if soft delete is implemented)
+func (r *UserRepository) Delete(id uint) error {
+	return r.DB.Delete(&entities.User{}, id).Error
 }

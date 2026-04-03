@@ -5,9 +5,8 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// InitRedis initializes Redis client
+// InitRedis initializes Redis client and tests connection
 func InitRedis(config *Config) (*redis.Client, error) {
-	// TODO: implement Redis initialization
 	client := redis.NewClient(&redis.Options{
 		Addr:     config.Redis.Host + ":" + config.Redis.Port,
 		Password: config.Redis.Password,
@@ -16,7 +15,9 @@ func InitRedis(config *Config) (*redis.Client, error) {
 
 	// Test connection
 	ctx := context.Background()
-	_, err := client.Ping(ctx).Result()
+	if _, err := client.Ping(ctx).Result(); err != nil {
+		return nil, err
+	}
 
-	return client, err
+	return client, nil
 }

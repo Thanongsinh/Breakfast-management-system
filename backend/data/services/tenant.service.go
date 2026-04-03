@@ -1,56 +1,139 @@
 package services
 
 import (
-	"context"
+	"errors"
+	"rental-v3/backend/data/repositories"
 	"rental-v3/backend/domain/entities"
 )
 
-// TenantService defines methods for tenant business logic
-type TenantService interface {
-	Create(ctx context.Context, tenant *entities.Tenant) error
-	GetByID(ctx context.Context, id string) (*entities.Tenant, error)
-	GetByUserID(ctx context.Context, userID string) (*entities.Tenant, error)
-	Update(ctx context.Context, tenant *entities.Tenant) error
-	Delete(ctx context.Context, id string) error
-	List(ctx context.Context, limit, offset int) ([]*entities.Tenant, error)
+type TenantService struct {
+	tenantRepo   *repositories.TenantRepository
+	roomRepo     *repositories.RoomRepository
+	buildingRepo *repositories.BuildingRepository
 }
 
-// tenantServiceImpl is the concrete implementation of TenantService
-type tenantServiceImpl struct {
-	// TODO: add dependencies (tenant repository)
+func NewTenantService(
+	tenantRepo *repositories.TenantRepository,
+	roomRepo *repositories.RoomRepository,
+	buildingRepo *repositories.BuildingRepository,
+) *TenantService {
+	return &TenantService{
+		tenantRepo:   tenantRepo,
+		roomRepo:     roomRepo,
+		buildingRepo: buildingRepo,
+	}
 }
 
-// NewTenantService creates a new instance of TenantService
-func NewTenantService() TenantService {
-	return &tenantServiceImpl{}
+// Create creates a new tenant
+func (s *TenantService) Create(ownerID uint, tenant *entities.Tenant) error {
+	// Verify room ownership
+	room, err := s.roomRepo.FindByID(tenant.RoomID)
+	if err != nil {
+		return err
+	}
+
+	building, err := s.buildingRepo.FindByID(room.BuildingID)
+	if err != nil {
+		return err
+	}
+
+	if building.OwnerID != ownerID {
+		return errors.New("forbidden: not the owner of this room")
+	}
+
+	// Check if room is already occupied
+	existingTenant, _ := s.tenantRepo.FindByRoomID(tenant.RoomID)
+	if existingTenant != nil && existingTenant.ID > 0 {
+		return errors.New("room is already occupied")
+	}
+
+	return s.tenantRepo.Create(tenant)
 }
 
-func (s *tenantServiceImpl) Create(ctx context.Context, tenant *entities.Tenant) error {
-	// TODO: implement
-	return nil
+// Update updates a tenant
+func (s *TenantService) Update(id, ownerID uint, tenant *entities.Tenant) error {
+	existing, err := s.tenantRepo.FindByID(id)
+	if err != nil {
+		return err
+	}
+
+	// Verify ownership
+	room, err := s.roomRepo.FindByID(existing.RoomID)
+	if err != nil {
+		return err
+	}
+
+	building, err := s.buildingRepo.FindByID(room.BuildingID)
+	if err != nil {
+		return err
+	}
+
+	if building.OwnerID != ownerID {
+		return errors.New("forbidden: not the owner of this tenant")
+	}
+
+	// Update fields
+	tenant.ID = id
+	return s.tenantRepo.Update(tenant)
 }
 
-func (s *tenantServiceImpl) GetByID(ctx context.Context, id string) (*entities.Tenant, error) {
-	// TODO: implement
-	return nil, nil
+// Delete soft deletes a tenant
+func (s *TenantService) Delete(id, ownerID uint) error {
+	tenant, err := s.tenantRepo.FindByID(id)
+	if err != nil {
+		return err
+	}
+
+	// Verify ownership
+	room, err := s.roomRepo.FindByID(tenant.RoomID)
+	if err != nil {
+		return err
+	}
+
+	building, err := s.buildingRepo.FindByID(room.BuildingID)
+	if err != nil {
+		return err
+	}
+
+	if building.OwnerID != ownerID {
+		return errors.New("forbidden: not the owner of this tenant")
+	}
+
+	return s.tenantRepo.Delete(id)
 }
 
-func (s *tenantServiceImpl) GetByUserID(ctx context.Context, userID string) (*entities.Tenant, error) {
-	// TODO: implement
-	return nil, nil
+// GetByID gets a tenant by ID
+func (s *TenantService) GetByID(id, ownerID uint) (*entities.Tenant, error) {
+	tenant, err := s.tenantRepo.FindByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Verify ownership
+	room, err := s.roomRepo.FindByID(tenant.RoomID)
+	if err != nil {
+		return nil, err
+	}
+
+	building, err := s.buildingRepo.FindByID(room.BuildingID)
+	if err != nil {
+		return nil, err
+	}
+
+	if building.OwnerID != ownerID {
+		return nil, errors.New("forbidden: not the owner of this tenant")
+	}
+
+	return tenant, nil
 }
 
-func (s *tenantServiceImpl) Update(ctx context.Context, tenant *entities.Tenant) error {
-	// TODO: implement
-	return nil
+// List returns paginated tenants for an owner
+func (s *TenantService) List(ownerID uint, page, limit int) ([]*entities.Tenant, int64, error) {
+	offset := (page - 1) * limit
+	return s.tenantRepo.ListByOwner(ownerID, limit, offset)
 }
 
-func (s *tenantServiceImpl) Delete(ctx context.Context, id string) error {
-	// TODO: implement
-	return nil
-}
-
-func (s *tenantServiceImpl) List(ctx context.Context, limit, offset int) ([]*entities.Tenant, error) {
-	// TODO: implement
-	return nil, nil
+// GetByUserID gets tenant by user ID
+func (s *TenantService) GetByUserID(userID uint) (*entities.Tenant, error) {
+	return s.tenantRepo.FindByUserID(userID)
 }

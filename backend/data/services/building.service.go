@@ -1,50 +1,101 @@
 package services
 
 import (
-	"context"
+	"errors"
+	"github.com/lib/pq"
+	"rental-v3/backend/data/repositories"
 	"rental-v3/backend/domain/entities"
+	"rental-v3/backend/domain/models"
 )
 
-// BuildingService defines methods for building business logic
-type BuildingService interface {
-	Create(ctx context.Context, building *entities.Building) error
-	GetByID(ctx context.Context, id string) (*entities.Building, error)
-	Update(ctx context.Context, building *entities.Building) error
-	Delete(ctx context.Context, id string) error
-	ListByOwner(ctx context.Context, ownerID string, limit, offset int) ([]*entities.Building, error)
+type BuildingService struct {
+	buildingRepo *repositories.BuildingRepository
 }
 
-// buildingServiceImpl is the concrete implementation of BuildingService
-type buildingServiceImpl struct {
-	// TODO: add dependencies (building repository)
+func NewBuildingService(buildingRepo *repositories.BuildingRepository) *BuildingService {
+	return &BuildingService{
+		buildingRepo: buildingRepo,
+	}
 }
 
-// NewBuildingService creates a new instance of BuildingService
-func NewBuildingService() BuildingService {
-	return &buildingServiceImpl{}
+// Create creates a new building
+func (s *BuildingService) Create(ownerID uint, req models.CreateBuildingRequest) (*entities.Building, error) {
+	building := &entities.Building{
+		OwnerID:     ownerID,
+		Name:        req.Name,
+		Address:     req.Address,
+		TotalFloors: req.TotalFloors,
+		Images:      pq.StringArray(req.Images),
+	}
+
+	if err := s.buildingRepo.Create(building); err != nil {
+		return nil, err
+	}
+
+	return building, nil
 }
 
-func (s *buildingServiceImpl) Create(ctx context.Context, building *entities.Building) error {
-	// TODO: implement
-	return nil
+// Update updates a building (with ownership verification)
+func (s *BuildingService) Update(id, ownerID uint, req models.UpdateBuildingRequest) error {
+	building, err := s.buildingRepo.FindByID(id)
+	if err != nil {
+		return err
+	}
+
+	// Verify ownership
+	if building.OwnerID != ownerID {
+		return errors.New("forbidden: not the owner of this building")
+	}
+
+	// Update fields
+	if req.Name != "" {
+		building.Name = req.Name
+	}
+	if req.Address != "" {
+		building.Address = req.Address
+	}
+	if req.TotalFloors > 0 {
+		building.TotalFloors = req.TotalFloors
+	}
+	if len(req.Images) > 0 {
+		building.Images = pq.StringArray(req.Images)
+	}
+
+	return s.buildingRepo.Update(building)
 }
 
-func (s *buildingServiceImpl) GetByID(ctx context.Context, id string) (*entities.Building, error) {
-	// TODO: implement
-	return nil, nil
+// Delete soft deletes a building (with ownership verification)
+func (s *BuildingService) Delete(id, ownerID uint) error {
+	building, err := s.buildingRepo.FindByID(id)
+	if err != nil {
+		return err
+	}
+
+	// Verify ownership
+	if building.OwnerID != ownerID {
+		return errors.New("forbidden: not the owner of this building")
+	}
+
+	return s.buildingRepo.Delete(id)
 }
 
-func (s *buildingServiceImpl) Update(ctx context.Context, building *entities.Building) error {
-	// TODO: implement
-	return nil
+// GetByID gets a building by ID (with ownership verification)
+func (s *BuildingService) GetByID(id, ownerID uint) (*entities.Building, error) {
+	building, err := s.buildingRepo.FindByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Verify ownership
+	if building.OwnerID != ownerID {
+		return nil, errors.New("forbidden: not the owner of this building")
+	}
+
+	return building, nil
 }
 
-func (s *buildingServiceImpl) Delete(ctx context.Context, id string) error {
-	// TODO: implement
-	return nil
-}
-
-func (s *buildingServiceImpl) ListByOwner(ctx context.Context, ownerID string, limit, offset int) ([]*entities.Building, error) {
-	// TODO: implement
-	return nil, nil
+// List returns paginated buildings for an owner
+func (s *BuildingService) List(ownerID uint, page, limit int) ([]*entities.Building, int64, error) {
+	offset := (page - 1) * limit
+	return s.buildingRepo.ListByOwner(ownerID, limit, offset)
 }

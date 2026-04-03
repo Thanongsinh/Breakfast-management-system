@@ -1,50 +1,97 @@
 package repositories
 
 import (
-	"context"
 	"rental-v3/backend/domain/entities"
+	"gorm.io/gorm"
 )
 
-// MaintenanceRepository defines methods for maintenance request data access
-type MaintenanceRepository interface {
-	Create(ctx context.Context, maintenance *entities.MaintenanceRequest) error
-	FindByID(ctx context.Context, id string) (*entities.MaintenanceRequest, error)
-	Update(ctx context.Context, maintenance *entities.MaintenanceRequest) error
-	ListByTenant(ctx context.Context, tenantID string, limit, offset int) ([]*entities.MaintenanceRequest, error)
-	ListByOwner(ctx context.Context, ownerID string, limit, offset int) ([]*entities.MaintenanceRequest, error)
+type MaintenanceRepository struct {
+	DB *gorm.DB
 }
 
-// maintenanceRepositoryImpl is the concrete implementation of MaintenanceRepository
-type maintenanceRepositoryImpl struct {
-	// TODO: add database connection
+func NewMaintenanceRepository(db *gorm.DB) *MaintenanceRepository {
+	return &MaintenanceRepository{DB: db}
 }
 
-// NewMaintenanceRepository creates a new instance of MaintenanceRepository
-func NewMaintenanceRepository() MaintenanceRepository {
-	return &maintenanceRepositoryImpl{}
+// Create creates a new maintenance request
+func (r *MaintenanceRepository) Create(req *entities.MaintenanceRequest) error {
+	return r.DB.Create(req).Error
 }
 
-func (r *maintenanceRepositoryImpl) Create(ctx context.Context, maintenance *entities.MaintenanceRequest) error {
-	// TODO: implement
-	return nil
+// FindByID finds a maintenance request by ID with preloaded relationships
+func (r *MaintenanceRepository) FindByID(id uint) (*entities.MaintenanceRequest, error) {
+	var req entities.MaintenanceRequest
+	err := r.DB.Preload("Room").Preload("Tenant").First(&req, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &req, nil
 }
 
-func (r *maintenanceRepositoryImpl) FindByID(ctx context.Context, id string) (*entities.MaintenanceRequest, error) {
-	// TODO: implement
-	return nil, nil
+// Update updates a maintenance request
+func (r *MaintenanceRepository) Update(req *entities.MaintenanceRequest) error {
+	return r.DB.Save(req).Error
 }
 
-func (r *maintenanceRepositoryImpl) Update(ctx context.Context, maintenance *entities.MaintenanceRequest) error {
-	// TODO: implement
-	return nil
+// ListByTenant returns paginated list of maintenance requests for a tenant
+func (r *MaintenanceRepository) ListByTenant(tenantID uint, page, limit int) ([]entities.MaintenanceRequest, int64, error) {
+	var requests []entities.MaintenanceRequest
+	var total int64
+
+	offset := (page - 1) * limit
+
+	// Count total
+	if err := r.DB.Model(&entities.MaintenanceRequest{}).Where("tenant_id = ?", tenantID).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Get paginated results
+	err := r.DB.Where("tenant_id = ?", tenantID).
+		Preload("Room").
+		Order("created_at DESC").
+		Offset(offset).Limit(limit).
+		Find(&requests).Error
+
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return requests, total, nil
 }
 
-func (r *maintenanceRepositoryImpl) ListByTenant(ctx context.Context, tenantID string, limit, offset int) ([]*entities.MaintenanceRequest, error) {
-	// TODO: implement
-	return nil, nil
-}
+// ListByOwner returns paginated list of maintenance requests for an owner with status filter
+func (r *MaintenanceRepository) ListByOwner(ownerID uint, status string, page, limit int) ([]entities.MaintenanceRequest, int64, error) {
+	var requests []entities.MaintenanceRequest
+	var total int64
 
-func (r *maintenanceRepositoryImpl) ListByOwner(ctx context.Context, ownerID string, limit, offset int) ([]*entities.MaintenanceRequest, error) {
-	// TODO: implement
-	return nil, nil
+	offset := (page - 1) * limit
+
+	// Build query with joins
+	query := r.DB.Model(&entities.MaintenanceRequest{}).
+		Joins("JOIN rooms ON rooms.id = maintenance_requests.room_id").
+		Joins("JOIN buildings ON buildings.id = rooms.building_id").
+		Where("buildings.owner_id = ?", ownerID)
+
+	// Apply status filter if provided
+	if status != "" {
+		query = query.Where("maintenance_requests.status = ?", status)
+	}
+
+	// Count total
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Get paginated results
+	err := query.
+		Preload("Room").Preload("Tenant").
+		Order("maintenance_requests.created_at DESC").
+		Offset(offset).Limit(limit).
+		Find(&requests).Error
+
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return requests, total, nil
 }

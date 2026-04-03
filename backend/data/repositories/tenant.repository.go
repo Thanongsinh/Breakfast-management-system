@@ -1,56 +1,64 @@
 package repositories
 
 import (
-	"context"
 	"rental-v3/backend/domain/entities"
+	"gorm.io/gorm"
 )
 
-// TenantRepository defines methods for tenant data access
-type TenantRepository interface {
-	Create(ctx context.Context, tenant *entities.Tenant) error
-	FindByID(ctx context.Context, id string) (*entities.Tenant, error)
-	FindByUserID(ctx context.Context, userID string) (*entities.Tenant, error)
-	Update(ctx context.Context, tenant *entities.Tenant) error
-	Delete(ctx context.Context, id string) error
-	List(ctx context.Context, limit, offset int) ([]*entities.Tenant, error)
+type TenantRepository struct {
+	DB *gorm.DB
 }
 
-// tenantRepositoryImpl is the concrete implementation of TenantRepository
-type tenantRepositoryImpl struct {
-	// TODO: add database connection
+func NewTenantRepository(db *gorm.DB) *TenantRepository {
+	return &TenantRepository{DB: db}
 }
 
-// NewTenantRepository creates a new instance of TenantRepository
-func NewTenantRepository() TenantRepository {
-	return &tenantRepositoryImpl{}
+func (r *TenantRepository) Create(tenant *entities.Tenant) error {
+	return r.DB.Create(tenant).Error
 }
 
-func (r *tenantRepositoryImpl) Create(ctx context.Context, tenant *entities.Tenant) error {
-	// TODO: implement
-	return nil
+func (r *TenantRepository) FindByID(id uint) (*entities.Tenant, error) {
+	var tenant entities.Tenant
+	err := r.DB.First(&tenant, id).Error
+	return &tenant, err
 }
 
-func (r *tenantRepositoryImpl) FindByID(ctx context.Context, id string) (*entities.Tenant, error) {
-	// TODO: implement
-	return nil, nil
+func (r *TenantRepository) FindByUserID(userID uint) (*entities.Tenant, error) {
+	var tenant entities.Tenant
+	err := r.DB.Where("user_id = ? AND deleted_at IS NULL", userID).First(&tenant).Error
+	return &tenant, err
 }
 
-func (r *tenantRepositoryImpl) FindByUserID(ctx context.Context, userID string) (*entities.Tenant, error) {
-	// TODO: implement
-	return nil, nil
+func (r *TenantRepository) FindByRoomID(roomID uint) (*entities.Tenant, error) {
+	var tenant entities.Tenant
+	err := r.DB.Where("room_id = ? AND deleted_at IS NULL", roomID).First(&tenant).Error
+	return &tenant, err
 }
 
-func (r *tenantRepositoryImpl) Update(ctx context.Context, tenant *entities.Tenant) error {
-	// TODO: implement
-	return nil
+func (r *TenantRepository) Update(tenant *entities.Tenant) error {
+	return r.DB.Save(tenant).Error
 }
 
-func (r *tenantRepositoryImpl) Delete(ctx context.Context, id string) error {
-	// TODO: implement
-	return nil
+func (r *TenantRepository) Delete(id uint) error {
+	return r.DB.Delete(&entities.Tenant{}, id).Error
 }
 
-func (r *tenantRepositoryImpl) List(ctx context.Context, limit, offset int) ([]*entities.Tenant, error) {
-	// TODO: implement
-	return nil, nil
+func (r *TenantRepository) List(limit, offset int) ([]*entities.Tenant, int64, error) {
+	var tenants []*entities.Tenant
+	var total int64
+	query := r.DB.Where("deleted_at IS NULL")
+	query.Model(&entities.Tenant{}).Count(&total)
+	err := query.Offset(offset).Limit(limit).Find(&tenants).Error
+	return tenants, total, err
+}
+
+func (r *TenantRepository) ListByOwner(ownerID uint, limit, offset int) ([]*entities.Tenant, int64, error) {
+	var tenants []*entities.Tenant
+	var total int64
+	query := r.DB.Joins("JOIN rooms ON tenants.room_id = rooms.id").
+		Joins("JOIN buildings ON rooms.building_id = buildings.id").
+		Where("buildings.owner_id = ? AND tenants.deleted_at IS NULL", ownerID)
+	query.Model(&entities.Tenant{}).Count(&total)
+	err := query.Offset(offset).Limit(limit).Find(&tenants).Error
+	return tenants, total, err
 }

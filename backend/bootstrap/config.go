@@ -1,6 +1,8 @@
 package bootstrap
 
 import (
+	"strings"
+
 	"github.com/spf13/viper"
 )
 
@@ -72,13 +74,36 @@ type CronConfig struct {
 
 // LoadConfig loads configuration from config.yaml and ENV variables
 func LoadConfig() (*Config, error) {
-	// TODO: implement full config loading with Viper
+	// Set config file
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(".")
+	viper.AddConfigPath("./")
+
+	// Read config file
+	if err := viper.ReadInConfig(); err != nil {
+		return nil, err
+	}
+
+	// Enable automatic env variable override
 	viper.AutomaticEnv()
 
+	// Replace dots with underscores for ENV variables
+	// e.g., database.password -> DATABASE_PASSWORD
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+
+	// Bind specific ENV variables that override config.yaml
+	viper.BindEnv("database.password", "DATABASE_PASSWORD")
+	viper.BindEnv("redis.password", "REDIS_PASSWORD")
+	viper.BindEnv("minio.access_key", "MINIO_ACCESSKEY")
+	viper.BindEnv("minio.secret_key", "MINIO_SECRETKEY")
+	viper.BindEnv("jwt.secret", "JWT_SECRET")
+	viper.BindEnv("line.notify_token", "LINE_NOTIFYTOKEN")
+
 	var config Config
-	// Placeholder implementation
+	if err := viper.Unmarshal(&config); err != nil {
+		return nil, err
+	}
+
 	return &config, nil
 }

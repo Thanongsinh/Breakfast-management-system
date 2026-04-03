@@ -1,50 +1,88 @@
 package repositories
 
 import (
-	"context"
 	"rental-v3/backend/domain/entities"
+	"gorm.io/gorm"
 )
 
-// ContractRepository defines methods for contract data access
-type ContractRepository interface {
-	Create(ctx context.Context, contract *entities.Contract) error
-	FindByID(ctx context.Context, id string) (*entities.Contract, error)
-	FindActiveByTenant(ctx context.Context, tenantID string) (*entities.Contract, error)
-	Update(ctx context.Context, contract *entities.Contract) error
-	List(ctx context.Context, limit, offset int) ([]*entities.Contract, error)
+type ContractRepository struct {
+	DB *gorm.DB
 }
 
-// contractRepositoryImpl is the concrete implementation of ContractRepository
-type contractRepositoryImpl struct {
-	// TODO: add database connection
+func NewContractRepository(db *gorm.DB) *ContractRepository {
+	return &ContractRepository{DB: db}
 }
 
-// NewContractRepository creates a new instance of ContractRepository
-func NewContractRepository() ContractRepository {
-	return &contractRepositoryImpl{}
+// Create creates a new contract
+func (r *ContractRepository) Create(contract *entities.Contract) error {
+	return r.DB.Create(contract).Error
 }
 
-func (r *contractRepositoryImpl) Create(ctx context.Context, contract *entities.Contract) error {
-	// TODO: implement
-	return nil
+// FindByID finds a contract by ID with preloaded relationships
+func (r *ContractRepository) FindByID(id uint) (*entities.Contract, error) {
+	var contract entities.Contract
+	err := r.DB.Preload("Room").Preload("Tenant").First(&contract, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &contract, nil
 }
 
-func (r *contractRepositoryImpl) FindByID(ctx context.Context, id string) (*entities.Contract, error) {
-	// TODO: implement
-	return nil, nil
+// FindActiveByTenant finds active contract for a tenant
+func (r *ContractRepository) FindActiveByTenant(tenantID uint) (*entities.Contract, error) {
+	var contract entities.Contract
+	err := r.DB.Where("tenant_id = ? AND status = ?", tenantID, "active").
+		Preload("Room").Preload("Tenant").
+		First(&contract).Error
+	if err != nil {
+		return nil, err
+	}
+	return &contract, nil
 }
 
-func (r *contractRepositoryImpl) FindActiveByTenant(ctx context.Context, tenantID string) (*entities.Contract, error) {
-	// TODO: implement
-	return nil, nil
+// Update updates a contract
+func (r *ContractRepository) Update(contract *entities.Contract) error {
+	return r.DB.Save(contract).Error
 }
 
-func (r *contractRepositoryImpl) Update(ctx context.Context, contract *entities.Contract) error {
-	// TODO: implement
-	return nil
+// List returns paginated list of contracts for an owner
+func (r *ContractRepository) List(ownerID uint, page, limit int) ([]entities.Contract, int64, error) {
+	var contracts []entities.Contract
+	var total int64
+
+	offset := (page - 1) * limit
+
+	// Count total
+	query := r.DB.Model(&entities.Contract{}).
+		Joins("JOIN rooms ON rooms.id = contracts.room_id").
+		Joins("JOIN buildings ON buildings.id = rooms.building_id").
+		Where("buildings.owner_id = ?", ownerID)
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Get paginated results
+	err := query.
+		Preload("Room").Preload("Tenant").
+		Offset(offset).Limit(limit).
+		Find(&contracts).Error
+
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return contracts, total, nil
 }
 
-func (r *contractRepositoryImpl) List(ctx context.Context, limit, offset int) ([]*entities.Contract, error) {
-	// TODO: implement
-	return nil, nil
+// FindAllActive finds all active contracts
+func (r *ContractRepository) FindAllActive() ([]entities.Contract, error) {
+	var contracts []entities.Contract
+	err := r.DB.Where("status = ?", "active").
+		Preload("Room").Preload("Tenant").
+		Find(&contracts).Error
+	if err != nil {
+		return nil, err
+	}
+	return contracts, nil
 }

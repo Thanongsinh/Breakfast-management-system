@@ -1,56 +1,60 @@
 package repositories
 
 import (
-	"context"
 	"rental-v3/backend/domain/entities"
+	"gorm.io/gorm"
 )
 
-// RoomRepository defines methods for room data access
-type RoomRepository interface {
-	Create(ctx context.Context, room *entities.Room) error
-	FindByID(ctx context.Context, id string) (*entities.Room, error)
-	Update(ctx context.Context, room *entities.Room) error
-	Delete(ctx context.Context, id string) error
-	ListByBuilding(ctx context.Context, buildingID string) ([]*entities.Room, error)
-	UpdateStatus(ctx context.Context, id string, status string) error
+type RoomRepository struct {
+	DB *gorm.DB
 }
 
-// roomRepositoryImpl is the concrete implementation of RoomRepository
-type roomRepositoryImpl struct {
-	// TODO: add database connection
+func NewRoomRepository(db *gorm.DB) *RoomRepository {
+	return &RoomRepository{DB: db}
 }
 
-// NewRoomRepository creates a new instance of RoomRepository
-func NewRoomRepository() RoomRepository {
-	return &roomRepositoryImpl{}
+func (r *RoomRepository) Create(room *entities.Room) error {
+	return r.DB.Create(room).Error
 }
 
-func (r *roomRepositoryImpl) Create(ctx context.Context, room *entities.Room) error {
-	// TODO: implement
-	return nil
+func (r *RoomRepository) FindByID(id uint) (*entities.Room, error) {
+	var room entities.Room
+	err := r.DB.First(&room, id).Error
+	return &room, err
 }
 
-func (r *roomRepositoryImpl) FindByID(ctx context.Context, id string) (*entities.Room, error) {
-	// TODO: implement
-	return nil, nil
+func (r *RoomRepository) Update(room *entities.Room) error {
+	return r.DB.Save(room).Error
 }
 
-func (r *roomRepositoryImpl) Update(ctx context.Context, room *entities.Room) error {
-	// TODO: implement
-	return nil
+func (r *RoomRepository) Delete(id uint) error {
+	return r.DB.Delete(&entities.Room{}, id).Error
 }
 
-func (r *roomRepositoryImpl) Delete(ctx context.Context, id string) error {
-	// TODO: implement
-	return nil
+func (r *RoomRepository) ListByBuilding(buildingID uint, limit, offset int) ([]*entities.Room, int64, error) {
+	var rooms []*entities.Room
+	var total int64
+	query := r.DB.Where("building_id = ? AND deleted_at IS NULL", buildingID)
+	query.Model(&entities.Room{}).Count(&total)
+	err := query.Offset(offset).Limit(limit).Find(&rooms).Error
+	return rooms, total, err
 }
 
-func (r *roomRepositoryImpl) ListByBuilding(ctx context.Context, buildingID string) ([]*entities.Room, error) {
-	// TODO: implement
-	return nil, nil
+func (r *RoomRepository) ListByStatus(status string, limit, offset int) ([]*entities.Room, int64, error) {
+	var rooms []*entities.Room
+	var total int64
+	query := r.DB.Where("status = ? AND deleted_at IS NULL", status)
+	query.Model(&entities.Room{}).Count(&total)
+	err := query.Offset(offset).Limit(limit).Find(&rooms).Error
+	return rooms, total, err
 }
 
-func (r *roomRepositoryImpl) UpdateStatus(ctx context.Context, id string, status string) error {
-	// TODO: implement
-	return nil
+func (r *RoomRepository) UpdateStatus(id uint, status string) error {
+	return r.DB.Model(&entities.Room{}).Where("id = ?", id).Update("status", status).Error
+}
+
+func (r *RoomRepository) FindByBuildingAndNumber(buildingID uint, number string) (*entities.Room, error) {
+	var room entities.Room
+	err := r.DB.Where("building_id = ? AND number = ? AND deleted_at IS NULL", buildingID, number).First(&room).Error
+	return &room, err
 }

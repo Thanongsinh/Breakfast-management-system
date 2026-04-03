@@ -1,50 +1,49 @@
 package repositories
 
 import (
-	"context"
 	"rental-v3/backend/domain/entities"
+	"gorm.io/gorm"
 )
 
-// BuildingRepository defines methods for building data access
-type BuildingRepository interface {
-	Create(ctx context.Context, building *entities.Building) error
-	FindByID(ctx context.Context, id string) (*entities.Building, error)
-	Update(ctx context.Context, building *entities.Building) error
-	Delete(ctx context.Context, id string) error
-	ListByOwner(ctx context.Context, ownerID string, limit, offset int) ([]*entities.Building, error)
+type BuildingRepository struct {
+	DB *gorm.DB
 }
 
-// buildingRepositoryImpl is the concrete implementation of BuildingRepository
-type buildingRepositoryImpl struct {
-	// TODO: add database connection
+func NewBuildingRepository(db *gorm.DB) *BuildingRepository {
+	return &BuildingRepository{DB: db}
 }
 
-// NewBuildingRepository creates a new instance of BuildingRepository
-func NewBuildingRepository() BuildingRepository {
-	return &buildingRepositoryImpl{}
+func (r *BuildingRepository) Create(building *entities.Building) error {
+	return r.DB.Create(building).Error
 }
 
-func (r *buildingRepositoryImpl) Create(ctx context.Context, building *entities.Building) error {
-	// TODO: implement
-	return nil
+func (r *BuildingRepository) FindByID(id uint) (*entities.Building, error) {
+	var building entities.Building
+	err := r.DB.First(&building, id).Error
+	return &building, err
 }
 
-func (r *buildingRepositoryImpl) FindByID(ctx context.Context, id string) (*entities.Building, error) {
-	// TODO: implement
-	return nil, nil
+func (r *BuildingRepository) Update(building *entities.Building) error {
+	return r.DB.Save(building).Error
 }
 
-func (r *buildingRepositoryImpl) Update(ctx context.Context, building *entities.Building) error {
-	// TODO: implement
-	return nil
+func (r *BuildingRepository) Delete(id uint) error {
+	return r.DB.Delete(&entities.Building{}, id).Error
 }
 
-func (r *buildingRepositoryImpl) Delete(ctx context.Context, id string) error {
-	// TODO: implement
-	return nil
+func (r *BuildingRepository) ListByOwner(ownerID uint, limit, offset int) ([]*entities.Building, int64, error) {
+	var buildings []*entities.Building
+	var total int64
+	query := r.DB.Where("owner_id = ?", ownerID)
+	query.Model(&entities.Building{}).Count(&total)
+	err := query.Offset(offset).Limit(limit).Find(&buildings).Error
+	return buildings, total, err
 }
 
-func (r *buildingRepositoryImpl) ListByOwner(ctx context.Context, ownerID string, limit, offset int) ([]*entities.Building, error) {
-	// TODO: implement
-	return nil, nil
+func (r *BuildingRepository) List(limit, offset int) ([]*entities.Building, int64, error) {
+	var buildings []*entities.Building
+	var total int64
+	r.DB.Model(&entities.Building{}).Count(&total)
+	err := r.DB.Offset(offset).Limit(limit).Find(&buildings).Error
+	return buildings, total, err
 }
