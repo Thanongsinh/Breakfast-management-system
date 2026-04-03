@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { paymentService } from '@/services/owner/payment.service';
+import * as paymentService from '@/services/owner/payment.service';
 import type { PaymentFilters, ConfirmCashPaymentRequest } from '@/types/payment.types';
 
 export function usePayments(filters?: PaymentFilters) {
@@ -29,5 +29,21 @@ export function usePaymentReceipt(paymentId: number) {
     queryKey: ['owner', 'payments', paymentId, 'receipt'],
     queryFn: () => paymentService.getReceipt(paymentId),
     enabled: !!paymentId,
+  });
+}
+
+export function useDownloadReceipt() {
+  return useMutation({
+    mutationFn: async (paymentId: number) => {
+      const blob = await paymentService.downloadReceipt(paymentId);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `receipt-${paymentId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    },
   });
 }

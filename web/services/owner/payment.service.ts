@@ -2,30 +2,26 @@ import api from '@/services/api';
 import type { Payment, PaymentFilters, ConfirmCashPaymentRequest, PaymentReceipt } from '@/types/payment.types';
 import type { ApiResponse, PaginatedResponse } from '@/types/api.types';
 
-export const paymentService = {
-  getPayments: async (filters?: PaymentFilters): Promise<PaginatedResponse<Payment>> => {
-    // TODO: implement
-    const response = await api.get('/owner/payments', { params: filters });
-    return response.data;
-  },
+export const getPayments = async (filters?: PaymentFilters, page = 1, limit = 20): Promise<PaginatedResponse<Payment>> => {
+  const { data } = await api.get<PaginatedResponse<Payment>>('/owner/payments', {
+    params: { ...filters, page, limit },
+  });
+  return data;
+};
 
-  confirmCashPayment: async (data: ConfirmCashPaymentRequest): Promise<ApiResponse<Payment>> => {
-    // TODO: implement
-    const response = await api.post('/owner/payments/confirm-cash', data);
-    return response.data;
-  },
+export const confirmCashPayment = async (paymentData: ConfirmCashPaymentRequest): Promise<Payment> => {
+  const { data } = await api.post<ApiResponse<Payment>>('/owner/payments/confirm-cash', paymentData);
+  return data.data;
+};
 
-  getReceipt: async (paymentId: number): Promise<PaymentReceipt> => {
-    // TODO: implement
-    const response = await api.get(`/owner/payments/${paymentId}/receipt`);
-    return response.data;
-  },
+export const getReceipt = async (paymentId: number): Promise<PaymentReceipt> => {
+  const { data } = await api.get<ApiResponse<PaymentReceipt>>(`/owner/payments/${paymentId}/receipt`);
+  return data.data;
+};
 
-  downloadReceipt: async (paymentId: number): Promise<Blob> => {
-    // TODO: implement
-    const response = await api.get(`/owner/payments/${paymentId}/receipt/pdf`, {
-      responseType: 'blob',
-    });
-    return response.data;
-  },
+export const downloadReceipt = async (paymentId: number): Promise<Blob> => {
+  const { data } = await api.get<Blob>(`/owner/payments/${paymentId}/receipt/pdf`, {
+    responseType: 'blob',
+  });
+  return data;
 };

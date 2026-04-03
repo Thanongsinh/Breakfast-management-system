@@ -1,4 +1,5 @@
 import api from '@/services/api';
+import type { ApiResponse } from '@/types/api.types';
 
 export interface MRRData {
   month: string;
@@ -18,16 +19,12 @@ export interface DashboardStats {
   totalRevenue: number;
 }
 
-export const statsService = {
-  getMRR: async (months: number = 12): Promise<MRRData[]> => {
-    // TODO: implement
-    const response = await api.get('/admin/stats/mrr', { params: { months } });
-    return response.data;
-  },
+export const getMRR = async (months: number = 12): Promise<MRRData[]> => {
+  const { data } = await api.get<ApiResponse<MRRData[]>>('/admin/stats/mrr', { params: { months } });
+  return data.data;
+};
 
-  getDashboardStats: async (): Promise<DashboardStats> => {
-    // TODO: implement
-    const response = await api.get('/admin/stats/dashboard');
-    return response.data;
-  },
+export const getDashboardStats = async (): Promise<DashboardStats> => {
+  const { data } = await api.get<ApiResponse<DashboardStats>>('/admin/stats/dashboard');
+  return data.data;
 };

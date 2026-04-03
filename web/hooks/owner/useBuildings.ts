@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { buildingService } from '@/services/owner/building.service';
+import * as buildingService from '@/services/owner/building.service';
 import type {
   CreateBuildingRequest,
   UpdateBuildingRequest,

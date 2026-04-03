@@ -1,9 +1,9 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { maintenanceService } from '@/services/owner/maintenance.service';
+import * as maintenanceService from '@/services/owner/maintenance.service';
 import type {
-  CreateMaintenanceRequest,
+  CreateMaintenanceRequest as CreateMaintenanceRequestType,
   UpdateMaintenanceRequest,
   MaintenanceFilters,
 } from '@/types/maintenance.types';
@@ -27,7 +27,7 @@ export function useCreateMaintenance() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: CreateMaintenanceRequest) => maintenanceService.createMaintenance(data),
+    mutationFn: (data: CreateMaintenanceRequestType) => maintenanceService.createMaintenance(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['owner', 'maintenance'] });
       queryClient.invalidateQueries({ queryKey: ['owner', 'dashboard'] });
@@ -44,6 +44,18 @@ export function useUpdateMaintenanceStatus() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['owner', 'maintenance'] });
       queryClient.invalidateQueries({ queryKey: ['owner', 'dashboard'] });
+    },
+  });
+}
+
+export function useUploadMaintenanceImages() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, images }: { id: number; images: File[] }) =>
+      maintenanceService.uploadImages(id, images),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['owner', 'maintenance'] });
     },
   });
 }

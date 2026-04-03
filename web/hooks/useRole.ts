@@ -5,7 +5,7 @@ import type { Role } from '@/types/auth.types';
 
 export function useRole(): Role | null {
   const { data: session } = useSession();
-  return (session?.user as any)?.role || null;
+  return session?.user?.role || null;
 }
 
 export function useIsOwner(): boolean {

@@ -13,24 +13,26 @@ export interface UpdateOwnerStatusRequest {
   status: 'active' | 'inactive';
 }
 
-export const ownerService = {
-  getOwners: async (filters?: OwnerFilters): Promise<PaginatedResponse<User>> => {
-    // TODO: implement
-    const response = await api.get('/admin/owners', { params: filters });
-    return response.data;
-  },
+export const getOwners = async (filters?: OwnerFilters, page = 1, limit = 20): Promise<PaginatedResponse<User>> => {
+  const { data } = await api.get<PaginatedResponse<User>>('/admin/owners', {
+    params: { ...filters, page, limit },
+  });
+  return data;
+};
 
-  getOwnerById: async (id: number): Promise<User> => {
-    // TODO: implement
-    const response = await api.get(`/admin/owners/${id}`);
-    return response.data;
-  },
+export const getOwnerById = async (id: number): Promise<User> => {
+  const { data } = await api.get<ApiResponse<User>>(`/admin/owners/${id}`);
+  return data.data;
+};
 
-  updateOwnerStatus: async (data: UpdateOwnerStatusRequest): Promise<ApiResponse<User>> => {
-    // TODO: implement
-    const response = await api.patch(`/admin/owners/${data.ownerId}/status`, {
-      status: data.status,
-    });
-    return response.data;
-  },
+export const updateOwnerStatus = async (ownerId: number, status: 'active' | 'inactive'): Promise<User> => {
+  const { data } = await api.patch<ApiResponse<User>>(`/admin/owners/${ownerId}/status`, {
+    status,
+  });
+  return data.data;
+};
+
+export const createOwner = async (ownerData: { name: string; email: string; password: string; phoneNumber?: string }): Promise<User> => {
+  const { data } = await api.post<ApiResponse<User>>('/admin/owners', ownerData);
+  return data.data;
 };

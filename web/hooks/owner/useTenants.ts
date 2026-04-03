@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { tenantService } from '@/services/owner/tenant.service';
+import * as tenantService from '@/services/owner/tenant.service';
 import type {
   CreateTenantRequest,
   UpdateTenantRequest,

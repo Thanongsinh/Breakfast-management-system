@@ -22,27 +22,22 @@ export interface UnpaidReport {
   overdueCount: number;
 }
 
-export const reportService = {
-  getIncomeReport: async (month: number, year: number): Promise<IncomeReport> => {
-    // TODO: implement
-    const response = await api.get('/owner/reports/income', {
-      params: { month, year },
-    });
-    return response.data;
-  },
+export const getIncomeReport = async (month: number, year: number): Promise<IncomeReport> => {
+  const { data } = await api.get<ApiResponse<IncomeReport>>('/owner/reports/income', {
+    params: { month, year },
+  });
+  return data.data;
+};
 
-  getUnpaidReport: async (): Promise<UnpaidReport[]> => {
-    // TODO: implement
-    const response = await api.get('/owner/reports/unpaid');
-    return response.data;
-  },
+export const getUnpaidReport = async (): Promise<UnpaidReport[]> => {
+  const { data } = await api.get<ApiResponse<UnpaidReport[]>>('/owner/reports/unpaid');
+  return data.data;
+};
 
-  exportToExcel: async (month: number, year: number): Promise<Blob> => {
-    // TODO: implement
-    const response = await api.get('/owner/reports/export', {
-      params: { month, year },
-      responseType: 'blob',
-    });
-    return response.data;
-  },
+export const exportExcel = async (month: number, year: number): Promise<Blob> => {
+  const { data } = await api.get<Blob>('/owner/reports/export', {
+    params: { month, year },
+    responseType: 'blob',
+  });
+  return data;
 };

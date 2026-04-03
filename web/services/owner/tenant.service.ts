@@ -7,58 +7,49 @@ import type {
   CreateContractRequest,
   TerminateContractRequest,
 } from '@/types/tenant.types';
-import type { ApiResponse, PaginatedResponse } from '@/types/api.types';
+import type { ApiResponse } from '@/types/api.types';
 
-export const tenantService = {
-  getTenants: async (): Promise<Tenant[]> => {
-    // TODO: implement
-    const response = await api.get('/owner/tenants');
-    return response.data;
-  },
+export const getTenants = async (page = 1, limit = 50): Promise<Tenant[]> => {
+  const { data } = await api.get<ApiResponse<Tenant[]>>('/owner/tenants', {
+    params: { page, limit },
+  });
+  return data.data;
+};
 
-  getTenantById: async (id: number): Promise<Tenant> => {
-    // TODO: implement
-    const response = await api.get(`/owner/tenants/${id}`);
-    return response.data;
-  },
+export const getTenantById = async (id: number): Promise<Tenant> => {
+  const { data } = await api.get<ApiResponse<Tenant>>(`/owner/tenants/${id}`);
+  return data.data;
+};
 
-  createTenant: async (data: CreateTenantRequest): Promise<ApiResponse<Tenant>> => {
-    // TODO: implement
-    const response = await api.post('/owner/tenants', data);
-    return response.data;
-  },
+export const createTenant = async (tenantData: CreateTenantRequest): Promise<Tenant> => {
+  const { data } = await api.post<ApiResponse<Tenant>>('/owner/tenants', tenantData);
+  return data.data;
+};
 
-  updateTenant: async (id: number, data: UpdateTenantRequest): Promise<ApiResponse<Tenant>> => {
-    // TODO: implement
-    const response = await api.put(`/owner/tenants/${id}`, data);
-    return response.data;
-  },
+export const updateTenant = async (id: number, tenantData: UpdateTenantRequest): Promise<Tenant> => {
+  const { data } = await api.put<ApiResponse<Tenant>>(`/owner/tenants/${id}`, tenantData);
+  return data.data;
+};
 
-  deleteTenant: async (id: number): Promise<ApiResponse<void>> => {
-    // TODO: implement
-    const response = await api.delete(`/owner/tenants/${id}`);
-    return response.data;
-  },
+export const deleteTenant = async (id: number): Promise<void> => {
+  await api.delete(`/owner/tenants/${id}`);
+};
 
-  getContracts: async (tenantId?: number): Promise<Contract[]> => {
-    // TODO: implement
-    const url = tenantId ? `/owner/contracts?tenantId=${tenantId}` : '/owner/contracts';
-    const response = await api.get(url);
-    return response.data;
-  },
+export const getContracts = async (tenantId?: number): Promise<Contract[]> => {
+  const url = tenantId ? `/owner/contracts?tenantId=${tenantId}` : '/owner/contracts';
+  const { data } = await api.get<ApiResponse<Contract[]>>(url);
+  return data.data;
+};
 
-  createContract: async (data: CreateContractRequest): Promise<ApiResponse<Contract>> => {
-    // TODO: implement
-    const response = await api.post('/owner/contracts', data);
-    return response.data;
-  },
+export const createContract = async (contractData: CreateContractRequest): Promise<Contract> => {
+  const { data } = await api.post<ApiResponse<Contract>>('/owner/contracts', contractData);
+  return data.data;
+};
 
-  terminateContract: async (
-    id: number,
-    data: TerminateContractRequest
-  ): Promise<ApiResponse<Contract>> => {
-    // TODO: implement
-    const response = await api.post(`/owner/contracts/${id}/terminate`, data);
-    return response.data;
-  },
+export const terminateContract = async (
+  id: number,
+  terminationData: TerminateContractRequest
+): Promise<Contract> => {
+  const { data } = await api.post<ApiResponse<Contract>>(`/owner/contracts/${id}/terminate`, terminationData);
+  return data.data;
 };

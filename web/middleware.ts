@@ -1,22 +1,27 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { auth } from '@/lib/auth';
 
 export async function middleware(request: NextRequest) {
   const session = await auth();
+  const { pathname } = request.nextUrl;
 
   // Public routes
-  if (request.nextUrl.pathname === '/login') {
+  if (pathname === '/login') {
     if (session) {
-      const role = (session.user as any)?.role;
-      if (role === 'owner') {
-        return NextResponse.redirect(new URL('/owner/dashboard', request.url));
-      } else if (role === 'admin') {
-        return NextResponse.redirect(new URL('/admin/dashboard', request.url));
-      } else if (role === 'tenant') {
-        return NextResponse.redirect(new URL('/tenant/dashboard', request.url));
-      }
+      const role = session.user.role;
+      return NextResponse.redirect(new URL(`/${role}/dashboard`, request.url));
     }
     return NextResponse.next();
+  }
+
+  // Root redirect
+  if (pathname === '/') {
+    if (session) {
+      const role = session.user.role;
+      return NextResponse.redirect(new URL(`/${role}/dashboard`, request.url));
+    }
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   // Protected routes
@@ -24,20 +29,20 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  const role = (session.user as any)?.role;
-  const pathname = request.nextUrl.pathname;
+  const role = session.user.role;
 
-  // Role-based route protection
+  // Role-based access control
   if (pathname.startsWith('/owner') && role !== 'owner') {
-    return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.redirect(new URL(`/${role}/dashboard`, request.url));
   }
 
   if (pathname.startsWith('/admin') && role !== 'admin') {
-    return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.redirect(new URL(`/${role}/dashboard`, request.url));
   }
 
   if (pathname.startsWith('/tenant') && role !== 'tenant') {
-    return NextResponse.redirect(new URL('/login', request.url));
+    // Tenant routes don't exist in web, redirect to login with message
+    return NextResponse.redirect(new URL('/login?error=tenant_web_not_supported', request.url));
   }
 
   return NextResponse.next();

@@ -1,18 +1,22 @@
 import NextAuth from 'next-auth';
-import Credentials from 'next-auth/providers/credentials';
-import type { AuthResponse, User } from '@/types/auth.types';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import type { User } from '@/types/auth.types';
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
-    Credentials({
+    CredentialsProvider({
+      name: 'Credentials',
       credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' },
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" }
       },
-      authorize: async (credentials) => {
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          return null;
+        }
+
         try {
-          // TODO: implement actual API call
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -21,21 +25,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             }),
           });
 
-          if (!response.ok) {
-            return null;
+          const data = await res.json();
+
+          if (res.ok && data.success) {
+            return {
+              id: data.data.user.id.toString(),
+              email: data.data.user.email,
+              name: data.data.user.name,
+              role: data.data.user.role,
+              phoneNumber: data.data.user.phoneNumber,
+              accessToken: data.data.access_token,
+            };
           }
-
-          const data: AuthResponse = await response.json();
-
-          return {
-            id: data.user.id.toString(),
-            email: data.user.email,
-            name: data.user.name,
-            role: data.user.role,
-            accessToken: data.access_token,
-          };
+          return null;
         } catch (error) {
-          console.error('Auth error:', error);
+          console.error('Login error:', error);
           return null;
         }
       },
@@ -44,22 +48,34 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
-        token.role = (user as any).role;
+        // Store access token and user data in JWT
         token.accessToken = (user as any).accessToken;
+        token.role = (user as any).role;
+        token.phoneNumber = (user as any).phoneNumber;
       }
       return token;
     },
     async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id as string;
-        (session.user as any).role = token.role;
-        (session as any).accessToken = token.accessToken;
-      }
-      return session;
+      // Add access token and custom fields to session
+      return {
+        ...session,
+        accessToken: token.accessToken as string,
+        user: {
+          id: parseInt(token.sub || '0'),
+          email: token.email || '',
+          name: token.name || '',
+          role: token.role as any,
+          phoneNumber: token.phoneNumber as string,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      };
     },
   },
   pages: {
     signIn: '/login',
+  },
+  session: {
+    strategy: 'jwt',
   },
 });

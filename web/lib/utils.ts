@@ -5,12 +5,11 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('th-TH', {
+export function formatCurrency(amount: number, currency: string = 'LAK'): string {
+  return new Intl.NumberFormat('lo-LA', {
     style: 'currency',
-    currency: 'THB',
+    currency: currency,
     minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
   }).format(amount);
 }
 

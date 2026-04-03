@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { statsService } from '@/services/admin/stats.service';
+import * as statsService from '@/services/admin/stats.service';
 
 export function useMRR(months: number = 12) {
   return useQuery({
