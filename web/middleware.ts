@@ -8,7 +8,7 @@ export async function middleware(request: NextRequest) {
 
   // Public routes
   if (pathname === '/login') {
-    if (session) {
+    if (session?.user?.role) {
       const role = session.user.role;
       return NextResponse.redirect(new URL(`/${role}/dashboard`, request.url));
     }
@@ -17,15 +17,15 @@ export async function middleware(request: NextRequest) {
 
   // Root redirect
   if (pathname === '/') {
-    if (session) {
+    if (session?.user?.role) {
       const role = session.user.role;
       return NextResponse.redirect(new URL(`/${role}/dashboard`, request.url));
     }
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // Protected routes
-  if (!session) {
+  // Protected routes - require valid session with user
+  if (!session?.user?.role) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
