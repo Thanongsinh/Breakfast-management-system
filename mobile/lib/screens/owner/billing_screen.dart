@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../widgets/role_aware_scaffold.dart';
 import '../../widgets/bill_card.dart';
 import '../../widgets/empty_state.dart';

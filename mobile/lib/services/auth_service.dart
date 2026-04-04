@@ -22,12 +22,6 @@ class AuthService {
 
       final data = response.data as Map<String, dynamic>;
 
-      // Save tokens
-      await _storageService.saveTokens(
-        accessToken: data['accessToken'] as String,
-        refreshToken: data['refreshToken'] as String,
-      );
-
       // Parse user
       final user = User.fromJson(data['user'] as Map<String, dynamic>);
 
@@ -43,6 +37,13 @@ class AuthService {
       // Set first account as current if available
       if (accounts.isNotEmpty) {
         await _storageService.saveCurrentAccount(accounts.first);
+
+        // Save tokens with user ID
+        await _storageService.saveTokens(
+          userId: accounts.first.id,
+          accessToken: data['accessToken'] as String,
+          refreshToken: data['refreshToken'] as String,
+        );
       }
 
       return {
@@ -66,7 +67,10 @@ class AuthService {
 
   Future<String?> refreshToken() async {
     try {
-      final refreshToken = await _storageService.getRefreshToken();
+      final userId = await _storageService.getActiveUserId();
+      if (userId == null) return null;
+
+      final refreshToken = await _storageService.getActiveRefreshToken();
       if (refreshToken == null) return null;
 
       final response = await _apiClient.post(
@@ -79,6 +83,7 @@ class AuthService {
       final newRefreshToken = data['refreshToken'] as String;
 
       await _storageService.saveTokens(
+        userId: userId,
         accessToken: newAccessToken,
         refreshToken: newRefreshToken,
       );
@@ -101,7 +106,7 @@ class AuthService {
   }
 
   Future<bool> isAuthenticated() async {
-    final token = await _storageService.getAccessToken();
+    final token = await _storageService.getActiveAccessToken();
     return token != null;
   }
 }

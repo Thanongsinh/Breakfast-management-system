@@ -32,7 +32,6 @@ class _ConfirmCashScreenState extends ConsumerState<ConfirmCashScreen> {
   @override
   Widget build(BuildContext context) {
     final billingState = ref.watch(billingProvider);
-    final paymentState = ref.watch(paymentProvider);
 
     // Filter for pending cash payments
     final pendingCashBills = billingState.bills.where((bill) {

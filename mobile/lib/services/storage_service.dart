@@ -102,4 +102,26 @@ class StorageService {
   Future<void> clearAll() async {
     await _storage.deleteAll();
   }
+
+  // Current account shortcuts (for compatibility)
+  Future<Account?> getCurrentAccount() async {
+    final userId = await getActiveUserId();
+    if (userId == null) return null;
+
+    final accounts = await getAccounts();
+    try {
+      return accounts.firstWhere((a) => a.id == userId);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<void> saveCurrentAccount(Account account) async {
+    await addAccount(account);
+    await setActiveUserId(account.id);
+  }
+
+  Future<void> clearCurrentAccount() async {
+    await clearActiveUserId();
+  }
 }

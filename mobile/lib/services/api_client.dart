@@ -25,7 +25,7 @@ class ApiClient {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          final token = await _storageService.getAccessToken();
+          final token = await _storageService.getActiveAccessToken();
           if (token != null) {
             options.headers['Authorization'] = 'Bearer $token';
           }
@@ -38,7 +38,7 @@ class ApiClient {
             if (refreshed) {
               // Retry the request
               final opts = error.requestOptions;
-              final token = await _storageService.getAccessToken();
+              final token = await _storageService.getActiveAccessToken();
               opts.headers['Authorization'] = 'Bearer $token';
               try {
                 final response = await _dio.fetch(opts);
@@ -58,7 +58,10 @@ class ApiClient {
 
   Future<bool> _refreshToken() async {
     try {
-      final refreshToken = await _storageService.getRefreshToken();
+      final userId = await _storageService.getActiveUserId();
+      if (userId == null) return false;
+
+      final refreshToken = await _storageService.getActiveRefreshToken();
       if (refreshToken == null) return false;
 
       final response = await _dio.post(
@@ -69,6 +72,7 @@ class ApiClient {
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
         await _storageService.saveTokens(
+          userId: userId,
           accessToken: data['accessToken'] as String,
           refreshToken: data['refreshToken'] as String,
         );
