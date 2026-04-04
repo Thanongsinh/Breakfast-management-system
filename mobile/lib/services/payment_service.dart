@@ -107,4 +107,20 @@ class PaymentService {
       rethrow;
     }
   }
+
+  // Owner: Confirm cash payment
+  Future<Payment> confirmCashPayment({
+    required int billId,
+  }) async {
+    try {
+      final response = await _apiClient.post(
+        '/owner/payments/confirm-cash',
+        data: {'billId': billId},
+      );
+      final data = response.data as Map<String, dynamic>;
+      return Payment.fromJson(data['data'] as Map<String, dynamic>);
+    } catch (e) {
+      throw Exception('Failed to confirm cash payment: $e');
+    }
+  }
 }
