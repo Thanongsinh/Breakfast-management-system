@@ -1,0 +1,48 @@
+# rental-backend configuration for Docker deployment
+# Secrets should be overridden via environment variables
+
+server:
+  port: "8080"
+  env: production
+
+database:
+  host: postgres              # Docker service name
+  port: "5432"
+  user: postgres
+  password: ""                # override: DATABASE_PASSWORD
+  name: rental_db
+  sslmode: disable
+
+redis:
+  host: redis                 # Docker service name
+  port: "6379"
+  password: ""                # override: REDIS_PASSWORD
+  db: 0
+
+minio:
+  endpoint: minio:9000        # Docker service name
+  access_key: ""              # override: MINIO_ACCESSKEY
+  secret_key: ""              # override: MINIO_SECRETKEY
+  use_ssl: false
+  buckets:
+    receipts: receipts
+    contracts: contracts
+    maintenance: maintenance-images
+
+jwt:
+  secret: ""                  # override: JWT_SECRET
+  access_expire_hours: 24
+  refresh_expire_days: 30
+
+line:
+  notify_token: ""            # override: LINE_NOTIFYTOKEN
+
+billing:
+  water_rate_per_unit: 5.0
+  electric_rate_per_unit: 7.0
+  due_day: 5
+
+cron:
+  bill_generate: "0 0 1 * *"      # 00:00 on 1st of each month
+  reminder_first: "0 9 25 * *"    # 09:00 on 25th (warning)
+  reminder_final: "0 9 28 * *"    # 09:00 on 28th (final)

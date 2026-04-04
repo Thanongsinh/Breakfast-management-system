@@ -1,0 +1,43 @@
+# Git
+.git
+.gitignore
+
+# Environment files
+.env
+.env.local
+
+# Documentation
+*.md
+CLAUDE.md
+
+# Binaries
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test files
+*_test.go
+*.test
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+uploads/
+
+# Go
+go.work
