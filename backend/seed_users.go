@@ -6,11 +6,17 @@ import (
 	"rental-v3/backend/bootstrap"
 	"rental-v3/backend/domain/entities"
 
+	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
 func main() {
+	// Load environment variables
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using system environment variables")
+	}
+
 	// Load config
 	config, err := bootstrap.LoadConfig()
 	if err != nil {

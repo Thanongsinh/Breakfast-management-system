@@ -93,6 +93,7 @@ func LoadConfig() (*Config, error) {
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	// Bind specific ENV variables that override config.yaml
+	viper.BindEnv("database.name", "DATABASE_NAME")
 	viper.BindEnv("database.password", "DATABASE_PASSWORD")
 	viper.BindEnv("redis.password", "REDIS_PASSWORD")
 	viper.BindEnv("minio.access_key", "MINIO_ACCESSKEY")
