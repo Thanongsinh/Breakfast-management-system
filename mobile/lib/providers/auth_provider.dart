@@ -82,6 +82,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<bool> checkAuthentication() async {
     return await _authService.isAuthenticated();
   }
+
+  // Set user directly (used when accounts are loaded first)
+  void setUser(User user) {
+    print('DEBUG AuthNotifier: Setting user = ${user.email}');
+    state = state.copyWith(user: user, isLoading: false);
+    print('DEBUG AuthNotifier: User set, isAuthenticated = ${state.isAuthenticated}');
+  }
 }
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {

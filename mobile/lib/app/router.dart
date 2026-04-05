@@ -20,26 +20,19 @@ import '../screens/owner/maintenance_screen.dart' as owner;
 import '../screens/owner/room_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
-  final accountState = ref.watch(accountProvider);
+  // DO NOT use ref.watch here - it would recreate the GoRouter on every auth change,
+  // resetting navigation back to initialLocation (/login).
+  // Instead, use ref.read inside the redirect callback.
 
   return GoRouter(
     initialLocation: '/login',
     redirect: (context, state) {
-      final isAuthenticated = authState.isAuthenticated;
-      final currentRole = accountState.currentRole;
+      // Read auth state at redirect time (not at router creation time)
+      final isAuthenticated = ref.read(authProvider).isAuthenticated;
       final isLoginRoute = state.matchedLocation == '/login';
 
       if (!isAuthenticated && !isLoginRoute) {
         return '/login';
-      }
-
-      if (isAuthenticated && isLoginRoute) {
-        if (currentRole == 'owner') {
-          return '/owner/home';
-        } else if (currentRole == 'tenant') {
-          return '/tenant/home';
-        }
       }
 
       return null;

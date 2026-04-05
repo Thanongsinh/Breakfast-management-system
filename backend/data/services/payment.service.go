@@ -13,7 +13,7 @@ type PaymentService struct {
 	paymentRepo         *repositories.PaymentRepository
 	billRepo            *repositories.BillRepository
 	tenantRepo          *repositories.TenantRepository
-	storageService      *StorageService
+	storageService      StorageService
 	notificationService *NotificationService
 }
 
@@ -21,7 +21,7 @@ func NewPaymentService(
 	paymentRepo *repositories.PaymentRepository,
 	billRepo *repositories.BillRepository,
 	tenantRepo *repositories.TenantRepository,
-	storageService *StorageService,
+	storageService StorageService,
 	notificationService *NotificationService,
 ) *PaymentService {
 	return &PaymentService{

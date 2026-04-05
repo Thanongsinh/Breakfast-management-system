@@ -19,11 +19,11 @@ class Account {
 
   factory Account.fromJson(Map<String, dynamic> json) {
     return Account(
-      id: json['id'] as String,
+      id: json['id'].toString(), // Convert int to String
       name: json['name'] as String,
       role: json['role'] as String,
-      room: json['room'] as String?,
-      building: json['building'] as String?,
+      room: json['room']?.toString(),
+      building: json['building']?.toString(),
       email: json['email'] as String?,
       phone: json['phone'] as String?,
     );

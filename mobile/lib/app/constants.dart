@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 class AppConstants {
   // API Configuration
-  static const String apiBaseUrl = 'https://api.rental-v3.com';
+  // สำหรับ emulator: http://10.0.2.2:8080/api
+  // สำหรับ device จริง: http://<YOUR_LOCAL_IP>:8080/api
+  static const String apiBaseUrl = 'http://10.0.2.2:8080/api';
   static const String apiVersion = 'v1';
 
   // Color Constants

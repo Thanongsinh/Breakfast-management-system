@@ -2,22 +2,34 @@ package routes
 
 import (
 	"rental-v3/backend/api/controllers"
+	"rental-v3/backend/api/middleware"
+	"rental-v3/backend/data/services"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 // SetupTenantRoutes sets up tenant-related routes
-func SetupTenantRoutes(app *fiber.App) {
-	billController := controllers.NewBillController()
-	paymentController := controllers.NewPaymentController()
-	maintenanceController := controllers.NewMaintenanceController()
+func SetupTenantRoutes(
+	app *fiber.App,
+	billService *services.BillService,
+	paymentService *services.PaymentService,
+	maintenanceService *services.MaintenanceService,
+	contractService *services.ContractService,
+	jwtSecret string,
+) {
+	// Initialize controllers with service dependencies
+	billController := controllers.NewBillController(billService)
+	paymentController := controllers.NewPaymentController(paymentService)
+	maintenanceController := controllers.NewMaintenanceController(maintenanceService)
 
-	// TODO: Add auth middleware and role middleware (tenant)
+	// Tenant group with auth and role middleware
 	tenant := app.Group("/api/tenant")
+	tenant.Use(middleware.AuthMiddleware(jwtSecret))
+	tenant.Use(middleware.RequireRole("tenant"))
 
 	// Bill routes
 	bills := tenant.Group("/bills")
-	bills.Get("/", billController.ListByTenant)
+	bills.Get("/", billController.List)
 	bills.Get("/:id", billController.GetByID)
 
 	// Payment routes

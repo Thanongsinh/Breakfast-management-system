@@ -13,7 +13,7 @@ type ContractService struct {
 	tenantRepo   *repositories.TenantRepository
 	roomRepo     *repositories.RoomRepository
 	buildingRepo *repositories.BuildingRepository
-	storageService *StorageService
+	storageService StorageService
 }
 
 func NewContractService(
@@ -21,7 +21,7 @@ func NewContractService(
 	tenantRepo *repositories.TenantRepository,
 	roomRepo *repositories.RoomRepository,
 	buildingRepo *repositories.BuildingRepository,
-	storageService *StorageService,
+	storageService StorageService,
 ) *ContractService {
 	return &ContractService{
 		contractRepo:   contractRepo,

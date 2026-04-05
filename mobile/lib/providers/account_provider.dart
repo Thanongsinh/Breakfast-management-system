@@ -41,16 +41,29 @@ class AccountNotifier extends StateNotifier<AccountState> {
   AccountNotifier(this._storageService) : super(AccountState());
 
   Future<void> loadAccounts() async {
+    print('DEBUG AccountProvider: ========== loadAccounts() called ==========');
+    print('DEBUG AccountProvider: Starting loadAccounts');
     state = state.copyWith(isLoading: true);
+    print('DEBUG AccountProvider: State set to loading');
     try {
+      print('DEBUG AccountProvider: Calling getAccounts()');
       final accounts = await _storageService.getAccounts();
+      print('DEBUG AccountProvider: Loaded ${accounts.length} accounts');
+
+      print('DEBUG AccountProvider: Calling getCurrentAccount()');
       final currentAccount = await _storageService.getCurrentAccount();
+      print('DEBUG AccountProvider: Current account = ${currentAccount?.email} (role: ${currentAccount?.role})');
+
+      print('DEBUG AccountProvider: Updating state with loaded data');
       state = state.copyWith(
         accounts: accounts,
         currentAccount: currentAccount,
         isLoading: false,
       );
-    } catch (e) {
+      print('DEBUG AccountProvider: State updated successfully');
+    } catch (e, stackTrace) {
+      print('DEBUG AccountProvider: Error loading accounts - $e');
+      print('DEBUG AccountProvider: Stack trace - $stackTrace');
       state = state.copyWith(
         isLoading: false,
         error: e.toString(),

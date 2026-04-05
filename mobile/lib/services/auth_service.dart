@@ -20,10 +20,15 @@ class AuthService {
         },
       );
 
-      final data = response.data as Map<String, dynamic>;
+      // Extract data from response (backend returns {success: true, data: {...}})
+      final responseData = response.data as Map<String, dynamic>;
+      print('DEBUG: Login response = $responseData');
+      final data = responseData['data'] as Map<String, dynamic>;
+      print('DEBUG: Login data = $data');
 
       // Parse user
       final user = User.fromJson(data['user'] as Map<String, dynamic>);
+      print('DEBUG: User parsed = ${user.email}');
 
       // Parse accounts
       final accountsList = data['accounts'] as List;
@@ -32,20 +37,27 @@ class AuthService {
           .toList();
 
       // Save accounts
+      print('DEBUG: Accounts to save = $accounts');
       await _storageService.saveAccounts(accounts);
+      print('DEBUG: Accounts saved');
 
       // Set first account as current if available
       if (accounts.isNotEmpty) {
+        print('DEBUG: Saving current account = ${accounts.first.email}');
         await _storageService.saveCurrentAccount(accounts.first);
+        print('DEBUG: Current account saved');
 
         // Save tokens with user ID
+        print('DEBUG: Saving tokens for user ${accounts.first.id}');
         await _storageService.saveTokens(
           userId: accounts.first.id,
           accessToken: data['accessToken'] as String,
           refreshToken: data['refreshToken'] as String,
         );
+        print('DEBUG: Tokens saved');
       }
 
+      print('DEBUG: Login complete, returning data');
       return {
         'user': user,
         'accounts': accounts,
@@ -78,14 +90,16 @@ class AuthService {
         data: {'refreshToken': refreshToken},
       );
 
-      final data = response.data as Map<String, dynamic>;
-      final newAccessToken = data['accessToken'] as String;
-      final newRefreshToken = data['refreshToken'] as String;
+      // Extract data from response wrapper
+      final responseData = response.data as Map<String, dynamic>;
+      final data = responseData['data'] as Map<String, dynamic>;
+      final newAccessToken = data['access_token'] as String;
 
+      // Refresh endpoint only returns new access token, keep old refresh token
       await _storageService.saveTokens(
         userId: userId,
         accessToken: newAccessToken,
-        refreshToken: newRefreshToken,
+        refreshToken: refreshToken,
       );
 
       return newAccessToken;
@@ -98,7 +112,9 @@ class AuthService {
   Future<User?> getCurrentUser() async {
     try {
       final response = await _apiClient.get('/auth/me');
-      final data = response.data as Map<String, dynamic>;
+      // Extract data from response wrapper
+      final responseData = response.data as Map<String, dynamic>;
+      final data = responseData['data'] as Map<String, dynamic>;
       return User.fromJson(data);
     } catch (e) {
       return null;

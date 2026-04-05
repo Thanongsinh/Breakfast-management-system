@@ -2,23 +2,39 @@ package routes
 
 import (
 	"rental-v3/backend/api/controllers"
+	"rental-v3/backend/api/middleware"
+	"rental-v3/backend/data/services"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 // SetupOwnerRoutes sets up owner-related routes
-func SetupOwnerRoutes(app *fiber.App) {
-	buildingController := controllers.NewBuildingController()
-	roomController := controllers.NewRoomController()
-	tenantController := controllers.NewTenantController()
-	contractController := controllers.NewContractController()
-	billController := controllers.NewBillController()
-	paymentController := controllers.NewPaymentController()
-	maintenanceController := controllers.NewMaintenanceController()
-	reportController := controllers.NewReportController()
+func SetupOwnerRoutes(
+	app *fiber.App,
+	buildingService *services.BuildingService,
+	roomService *services.RoomService,
+	tenantService *services.TenantService,
+	contractService *services.ContractService,
+	billService *services.BillService,
+	paymentService *services.PaymentService,
+	maintenanceService *services.MaintenanceService,
+	reportService *services.ReportService,
+	jwtSecret string,
+) {
+	// Initialize controllers with service dependencies
+	buildingController := controllers.NewBuildingController(buildingService)
+	roomController := controllers.NewRoomController(roomService)
+	tenantController := controllers.NewTenantController(tenantService)
+	contractController := controllers.NewContractController(contractService)
+	billController := controllers.NewBillController(billService)
+	paymentController := controllers.NewPaymentController(paymentService)
+	maintenanceController := controllers.NewMaintenanceController(maintenanceService)
+	reportController := controllers.NewReportController(reportService)
 
-	// TODO: Add auth middleware and role middleware (owner)
+	// Owner group with auth and role middleware
 	owner := app.Group("/api/owner")
+	owner.Use(middleware.AuthMiddleware(jwtSecret))
+	owner.Use(middleware.RequireRole("owner"))
 
 	// Building routes
 	buildings := owner.Group("/buildings")
@@ -73,7 +89,8 @@ func SetupOwnerRoutes(app *fiber.App) {
 
 	// Report routes
 	reports := owner.Group("/reports")
-	reports.Get("/income", reportController.GetIncome)
-	reports.Get("/unpaid", reportController.GetUnpaid)
-	reports.Get("/export-excel", reportController.ExportExcel)
+	reports.Get("/income", reportController.GetIncomeReport)
+	reports.Get("/unpaid", reportController.GetUnpaidReport)
+	reports.Get("/income/export", reportController.ExportIncome)
+	reports.Get("/unpaid/export", reportController.ExportUnpaid)
 }

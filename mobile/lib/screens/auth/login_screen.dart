@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/account_provider.dart';
+import '../../services/auth_service.dart';
+import '../../models/user.dart';
 import '../../app/constants.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -137,23 +139,45 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     try {
-      await ref.read(authProvider.notifier).login(
-            email: _emailController.text.trim(),
-            password: _passwordController.text,
-          );
+      // Step 1: Call auth service to get login result (accounts + user)
+      print('DEBUG: Calling auth service login');
+      final authService = ref.read(authServiceProvider);
+      final loginResult = await authService.login(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
 
+      print('DEBUG: Login successful');
+
+      // Step 2: Load accounts into accountProvider
+      print('DEBUG: Loading accounts into accountProvider');
       await ref.read(accountProvider.notifier).loadAccounts();
-      final accountState = ref.read(accountProvider);
 
-      if (mounted) {
-        if (accountState.currentAccount != null) {
-          final role = accountState.currentAccount!.role;
-          if (role == 'owner') {
-            context.go('/owner/home');
-          } else {
-            context.go('/tenant/home');
-          }
+      final accountState = ref.read(accountProvider);
+      print('DEBUG: Accounts loaded - count: ${accountState.accounts.length}');
+      print('DEBUG: Current account: ${accountState.currentAccount?.email}, role: ${accountState.currentAccount?.role}');
+
+      // Step 3: Set user FIRST so isAuthenticated becomes true
+      print('DEBUG: Setting user in authProvider');
+      final user = loginResult['user'] as User;
+      ref.read(authProvider.notifier).setUser(user);
+      print('DEBUG: User set, isAuthenticated = ${ref.read(authProvider).isAuthenticated}');
+
+      // Step 4: Navigate after auth state is set
+      if (mounted && accountState.currentAccount != null) {
+        final role = accountState.currentAccount!.role;
+        print('DEBUG: Navigating to home for role: $role');
+
+        // Use pushReplacement to prevent back navigation to login
+        if (role == 'owner' || role == 'admin') {
+          print('DEBUG: Going to /owner/home');
+          context.go('/owner/home');
+        } else if (role == 'tenant') {
+          print('DEBUG: Going to /tenant/home');
+          context.go('/tenant/home');
         }
+      } else {
+        print('DEBUG: ERROR - Cannot navigate: mounted=$mounted, account=${accountState.currentAccount}');
       }
     } catch (e) {
       if (mounted) {

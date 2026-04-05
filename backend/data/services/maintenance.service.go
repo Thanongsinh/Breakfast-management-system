@@ -15,14 +15,14 @@ type MaintenanceService struct {
 	maintenanceRepo *repositories.MaintenanceRepository
 	roomRepo        *repositories.RoomRepository
 	buildingRepo    *repositories.BuildingRepository
-	storageService  *StorageService
+	storageService  StorageService
 }
 
 func NewMaintenanceService(
 	maintenanceRepo *repositories.MaintenanceRepository,
 	roomRepo *repositories.RoomRepository,
 	buildingRepo *repositories.BuildingRepository,
-	storageService *StorageService,
+	storageService StorageService,
 ) *MaintenanceService {
 	return &MaintenanceService{
 		maintenanceRepo: maintenanceRepo,
@@ -80,9 +80,6 @@ func (s *MaintenanceService) Update(id, ownerID uint, req models.UpdateMaintenan
 	// Update fields
 	if req.Status != "" {
 		maintenanceReq.Status = req.Status
-	}
-	if req.Priority != "" {
-		maintenanceReq.Priority = req.Priority
 	}
 
 	// If marked as done, set resolved time

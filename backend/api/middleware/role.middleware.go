@@ -5,24 +5,33 @@ import (
 )
 
 // RequireRole returns a Fiber middleware handler for role-based access control
-func RequireRole(role string) fiber.Handler {
+// Supports multiple allowed roles (variadic parameter)
+func RequireRole(allowedRoles ...string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// TODO: Get user from context (set by AuthMiddleware)
-		// user := c.Locals("user")
-		// if user == nil {
-		// 	return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-		// 		"error": "Unauthorized",
-		// 	})
-		// }
+		// Get role from context (set by AuthMiddleware)
+		role, ok := c.Locals("role").(string)
+		if !ok || role == "" {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"success": false,
+				"error":   "Unauthorized",
+			})
+		}
 
-		// TODO: Check if user has required role
-		// if user.Role != role {
-		// 	return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-		// 		"error": "Insufficient permissions",
-		// 	})
-		// }
+		// Check if user has any of the required roles
+		hasAccess := false
+		for _, allowedRole := range allowedRoles {
+			if role == allowedRole {
+				hasAccess = true
+				break
+			}
+		}
 
-		_ = role // Placeholder to avoid unused variable error
+		if !hasAccess {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+				"success": false,
+				"error":   "Insufficient permissions",
+			})
+		}
 
 		return c.Next()
 	}
